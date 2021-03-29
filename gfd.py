@@ -1,11 +1,5 @@
 import numpy as np
 
-def get_fcor(lat):
-    return 2*2*np.pi/86164*np.sin(lat/180*np.pi)
-
-def get_beta(lat):
-    return 2*2*np.pi/86164/6371e3*np.cos(lat/180*np.pi)
-    
 def nearest_mean(x_in, y_in, z_in, x_out, y_out, n_nearest=6, decay=4):
     """Given z(x, y), find z(x', y'), in which x' and y' are not on the x, y grid
     
@@ -41,6 +35,46 @@ def nearest_mean(x_in, y_in, z_in, x_out, y_out, n_nearest=6, decay=4):
     
     return np.array(z_out)
 
+def fft(y, dt):
+    '''fft along the last axis
+    
+    Returns:
+        amplitude, phase, omega vector
+    '''
+    
+    from scipy import fftpack
+    nt = y.shape[-1]
+    time = dt*nt
+    
+    domega = 2*np.pi/time
+    omegavec = domega*np.arange(0, nt) # starting from 0
+    
+    Fy = fftpack.fft(y)/nt*2 # Fy is complex
+    
+    numUniquePts = int(np.ceil( (nt+1)/2 ))
+    omegavec = omegavec[..., :numUniquePts]
+    Fy = Fy[..., :numUniquePts] # remove half of the last axis
+    Fy[..., 0] = Fy[..., 0]*0.5 # normalization of the first point
+    
+    return abs(Fy), np.angle(Fy), omegavec
+
+def fft_prod(u, v, dx):
+    '''fft of the product of u, v along the last axis
+    
+    Returns:
+        (1/2)Re(u v*)
+    '''
+    amp_u, ph_u, kvec = fft(u, dx)
+    amp_v, ph_v, kvec = fft(v, dx)
+
+    return 1/2*amp_u*amp_v*np.cos(ph_u - ph_v), kvec
+
+def get_fcor(lat):
+    return 2*2*np.pi/86164*np.sin(lat/180*np.pi)
+
+def get_beta(lat):
+    return 2*2*np.pi/86164/6371e3*np.cos(lat/180*np.pi)
+    
 def geoaxes(axes):
     '''
     Axes settings for geographical maps
