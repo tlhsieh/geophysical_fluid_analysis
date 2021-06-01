@@ -76,8 +76,7 @@ def get_beta(lat):
     return 2*2*np.pi/86164/6371e3*np.cos(lat/180*np.pi)
     
 def geoaxes(axes):
-    '''
-    Axes settings for geographical maps
+    '''Axes settings for geographical maps
     
     Args:
         axes: array of axes or plt.gca()
@@ -94,7 +93,7 @@ def geoaxes(axes):
 from scipy.ndimage.filters import convolve1d
 
 def xroll(array, fac=1, axis=-1):
-    '''compute cyclic rolling mean'''
+    '''Compute cyclic rolling mean'''
     
     kernal = np.ones((fac))/fac
     rolled = convolve1d(array, kernal, axis=axis, mode='wrap')
@@ -110,10 +109,19 @@ def smooth(da, xfac=1, yfac=1):
 
 import xarray as xr
 
-def ddx(da, dim='x'):
-    upper = da.diff(dim, label='upper')/da[dim].diff(dim, label='upper')
-    lower = da.diff(dim, label='lower')/da[dim].diff(dim, label='lower')
-    return (upper + lower)*0.5
+def sym(da, dim='y'):
+    '''Symmetrize da across y = 0'''
+    
+    da_reverse = xr.DataArray(da.values, coords=[-da[dim]], dims=[dim])
+    da_out = (da + da_reverse)/2
+    return da_out
+
+def antisym(da, dim='y'):
+    '''Anti-symmetrize da across y = 0'''
+    
+    da_reverse = xr.DataArray(-da.values, coords=[-da[dim]], dims=[dim])
+    da_out = (da + da_reverse)/2
+    return da_out
 
 def nan2zero(da):
     nparray = da.values
