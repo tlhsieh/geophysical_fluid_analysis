@@ -93,7 +93,7 @@ def geoaxes(axes):
 from scipy.ndimage.filters import convolve1d
 
 def xroll(array, fac=1, axis=-1):
-    '''Compute cyclic rolling mean'''
+    '''compute cyclic rolling mean'''
     
     kernal = np.ones((fac))/fac
     rolled = convolve1d(array, kernal, axis=axis, mode='wrap')
@@ -109,20 +109,6 @@ def smooth(da, xfac=1, yfac=1):
 
 import xarray as xr
 
-def sym(da, dim='y'):
-    '''Symmetrize da across y = 0'''
-    
-    da_reverse = xr.DataArray(da.values, coords=[-da[dim]], dims=[dim])
-    da_out = (da + da_reverse)/2
-    return da_out
-
-def antisym(da, dim='y'):
-    '''Anti-symmetrize da across y = 0'''
-    
-    da_reverse = xr.DataArray(-da.values, coords=[-da[dim]], dims=[dim])
-    da_out = (da + da_reverse)/2
-    return da_out
-
 def nan2zero(da):
     nparray = da.values
     nparray[np.isnan(nparray)] = 0
@@ -135,3 +121,42 @@ def get_land():
     land_bool = land_frac.values/land_frac.values
     land_bool[np.isnan(land_bool)] = 0
     return xr.DataArray(land_bool, coords=[land_frac.grid_yt, land_frac.grid_xt], dims=['lat', 'lon'])
+
+from scipy.linalg import block_diag
+
+def coarse_grain(data4d, factor=1):
+    """Coarse grain the last two dimensions of the 4d (t, z, y, x) input data by a factor >= 1
+    
+    Args:
+        factor (int)
+    """
+    
+    taxis = data4d[data4d.dims[0]]
+    zaxis = data4d[data4d.dims[1]]
+    yaxis = data4d[data4d.dims[-2]]
+    xaxis = data4d[data4d.dims[-1]]
+    
+    data = data4d.values
+    
+    # parameters needed for coarse-graining
+    xlen = data.shape[-1]
+    ylen = data.shape[-2]
+    xquotient = xlen//factor
+    yquotient = ylen//factor
+    ysouth = (ylen - yquotient*factor)//2
+    ynorth = ysouth + yquotient*factor
+    
+    # helper matrices
+    onecol = np.ones((factor, 1))/factor # a column vector
+    ones = (onecol,)*xquotient
+    right = block_diag(*ones)
+    onerow = np.ones((1, factor))/factor # a row vector
+    ones = (onerow,)*yquotient
+    left = block_diag(*ones)
+    
+    # do the work
+    coarse = np.array([[np.dot( np.dot(left, data[it,iz,ysouth:ynorth,:]), right ) for iz in range(data.shape[1])] for it in range(data.shape[0])])
+    xcoarse = np.dot(xaxis.values, right)
+    ycoarse = np.dot(left, yaxis.values[ysouth:ynorth]).flatten()
+    
+    return xr.DataArray(coarse, dims=data4d.dims, coords=[taxis,zaxis,ycoarse,xcoarse], name=data4d.name)
