@@ -93,7 +93,7 @@ def geoaxes(axes):
 from scipy.ndimage.filters import convolve1d
 
 def xroll(array, fac=1, axis=-1):
-    '''compute cyclic rolling mean'''
+    '''Compute cyclic rolling mean'''
     
     kernal = np.ones((fac))/fac
     rolled = convolve1d(array, kernal, axis=axis, mode='wrap')
@@ -109,13 +109,27 @@ def smooth(da, xfac=1, yfac=1):
 
 import xarray as xr
 
+def sym(da, dim='y'):
+    '''Symmetrize da across y = 0'''
+
+    da_reverse = xr.DataArray(da.values, coords=[-da[dim]], dims=[dim])
+    da_out = (da + da_reverse)/2
+    return da_out
+
+def antisym(da, dim='y'):
+    '''Anti-symmetrize da across y = 0'''
+
+    da_reverse = xr.DataArray(-da.values, coords=[-da[dim]], dims=[dim])
+    da_out = (da + da_reverse)/2
+    return da_out
+
 def nan2zero(da):
     nparray = da.values
     nparray[np.isnan(nparray)] = 0
     return xr.DataArray(nparray, coords=da.coords)
 
 def get_land():
-    '''return land data for HiRAM'''
+    '''Return land data for HiRAM'''
     
     land_frac = xr.open_dataset('/home/hsiehtl/HiRAM_land_static.nc')['frac'][0]
     land_bool = land_frac.values/land_frac.values
