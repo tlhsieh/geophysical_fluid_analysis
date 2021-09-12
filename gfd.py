@@ -75,7 +75,7 @@ def get_fcor(lat):
 def get_beta(lat):
     return 2*2*np.pi/86164/6371e3*np.cos(lat/180*np.pi)
     
-def geoaxes(axes):
+def geoaxes(axes, land=True):
     '''Axes settings for geographical maps
     
     Args:
@@ -85,7 +85,12 @@ def geoaxes(axes):
     if not (type(axes) == np.ndarray):
         axes = [axes]
         
+    if land:
+        coastlines = get_land()
+        
     for ax in axes:
+        if land:
+            coastlines.plot.contour(ax=ax, colors='k', linewidths=1)
         ax.set_xlabel('Longitude')
         ax.set_ylabel('Latitude')
         ax.set_xticks(range(0, 361, 60))
