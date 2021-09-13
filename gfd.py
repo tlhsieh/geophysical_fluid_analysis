@@ -133,10 +133,14 @@ def nan2zero(da):
     nparray[np.isnan(nparray)] = 0
     return xr.DataArray(nparray, coords=da.coords)
 
-def get_land():
+def get_land(da_source=None):
     '''Return land data for HiRAM'''
     
-    land_frac = xr.open_dataset('/home/hsiehtl/HiRAM_land_static.nc')['frac'][0]
+    if da_source is None:
+        land_frac = xr.open_dataset('/home/hsiehtl/HiRAM_land_static.nc')['frac'][0]
+    else:
+        land_frac = da_source
+        
     land_bool = land_frac.values/land_frac.values
     land_bool[np.isnan(land_bool)] = 0
     return xr.DataArray(land_bool, coords=[land_frac.grid_yt, land_frac.grid_xt], dims=['lat', 'lon'])
