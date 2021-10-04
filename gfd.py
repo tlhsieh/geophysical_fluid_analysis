@@ -88,12 +88,15 @@ def geoaxes(axes, land=True):
     if land:
         coastlines = get_land()
         
-    for ax in axes:
+    for i in range(len(axes)):
         if land:
-            coastlines.plot.contour(ax=ax, colors='k', linewidths=1)
-        ax.set_xlabel('Longitude')
-        ax.set_ylabel('Latitude')
-        ax.set_xticks(range(0, 361, 60))
+            coastlines.plot.contour(ax=axes[i], colors='k', linewidths=1)
+        if i == len(axes) - 1: # label the last plot
+            axes[i].set_xlabel('Longitude')
+        else:
+            axes[i].set_xlabel('')
+        axes[i].set_ylabel('Latitude')
+        axes[i].set_xticks(range(0, 361, 60))
         
 from scipy.ndimage.filters import convolve1d
 
