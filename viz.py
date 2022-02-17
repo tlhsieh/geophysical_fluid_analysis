@@ -21,11 +21,11 @@ def crop(filename, outfilename='cropped.png'):
     cropped = image[idx_ax0_beg:idx_ax0_end, idx_ax1_beg:idx_ax1_end, :]
     imageio.imsave(outfilename, cropped)
 
-def concat_img(filenames, outfilename='combined.png', axis=0):
-    """Combine a list of images to one. Input images can have different sizes.
+def concat_img(filenames, outfilename='combined', axis=0):
+    """Combine a list of images to one. Input images can have different sizes. Output has the same extension as input.
 
     Example:
-        concat_img(['input1.png', 'input2.png'], 'output.png', 1)
+        concat_img(['input1.png', 'input2.png'], 'output', 1)
 
     Args:
         axis: 0 for vertical stack; 1 for horizontal strip
@@ -37,9 +37,9 @@ def concat_img(filenames, outfilename='combined.png', axis=0):
 
     padded = []
     for image in images:
-        white = np.ones([maxax0, maxax1, 4]).astype('uint8')*255
+        white = np.ones([maxax0, maxax1, image.shape[2]], dtype=image.dtype)*255
         white[:image.shape[0], :image.shape[1], :] = image
         padded.append(white)
 
     combined = np.concatenate(padded, axis=axis)
-    imageio.imsave(outfilename, combined)
+    imageio.imsave(outfilename+'.'+filenames[0].split('.')[-1], combined)
