@@ -96,7 +96,8 @@ def geoaxes(axes, land=True):
         else:
             axes[i].set_xlabel('')
         axes[i].set_ylabel('Latitude')
-        axes[i].set_xticks(range(0, 361, 60))
+        axes[i].set_xticks(range(0, 360+1, 60))
+        axes[i].set_yticks(range(-90, 90+1, 15))
         
 from scipy.ndimage.filters import convolve1d
 
