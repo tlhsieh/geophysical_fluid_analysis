@@ -5,7 +5,6 @@ def nearest_mean(x_in, y_in, z_in, x_out, y_out, n_nearest=6, decay=4):
     
     Example:
         slp_track = nearest_mean(slp.lon, slp.lat, slp.values, lon_track, lat_track)
-
     Args:
         x_in (1d or 2d array)
         y_in (1d or 2d array)
@@ -14,7 +13,6 @@ def nearest_mean(x_in, y_in, z_in, x_out, y_out, n_nearest=6, decay=4):
         y_out (1d array)
         n_nearest (int): number of nearest input grid points to average over; the smaller the faster
         decay (int): exponent over 1/dist^2; the larger the more local
-
     Returns:
         z_out (1d array)
     """
@@ -36,11 +34,11 @@ def nearest_mean(x_in, y_in, z_in, x_out, y_out, n_nearest=6, decay=4):
     return np.array(z_out)
 
 def fft(y, dt):
-    """fft along the last axis
+    '''fft along the last axis
     
     Returns:
         amplitude, phase, omega vector
-    """
+    '''
     
     from scipy import fftpack
     nt = y.shape[-1]
@@ -59,11 +57,11 @@ def fft(y, dt):
     return abs(Fy), np.angle(Fy), omegavec
 
 def fft_prod(u, v, dx):
-    """fft of the product of u, v along the last axis
+    '''fft of the product of u, v along the last axis
     
     Returns:
         (1/2)Re(u v*)
-    """
+    '''
     amp_u, ph_u, kvec = fft(u, dx)
     amp_v, ph_v, kvec = fft(v, dx)
 
@@ -76,11 +74,11 @@ def get_beta(lat):
     return 2*2*np.pi/86164/6371e3*np.cos(lat/180*np.pi)
     
 def geoaxes(axes, land=True):
-    """Axes settings for geographical maps
+    '''Axes settings for geographical maps
     
     Args:
         axes: array of axes or plt.gca()
-    """
+    '''
     
     if not (type(axes) == np.ndarray):
         axes = [axes]
@@ -148,6 +146,9 @@ def get_land(da_source=None):
     land_bool = land_frac.values/land_frac.values
     land_bool[np.isnan(land_bool)] = 0
     return xr.DataArray(land_bool, coords=[land_frac.grid_yt, land_frac.grid_xt], dims=['lat', 'lon'])
+
+def downsample(da, fac=2):
+    return da[..., ::fac, ::fac]
 
 from scipy.linalg import block_diag
 
