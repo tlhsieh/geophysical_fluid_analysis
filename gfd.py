@@ -135,6 +135,27 @@ def nan2zero(da):
     nparray[np.isnan(nparray)] = 0
     return xr.DataArray(nparray, coords=da.coords)
 
+def latsel(da, latS, latN):
+    lat_name = da.dims[-2]
+    lat = da[lat_name].values
+    
+    ilatS = np.searchsorted(lat, latS)
+    ilatN = np.searchsorted(lat, latN)
+    
+    return da.isel({lat_name: range(ilatS, ilatN)})
+
+def lonsel(da, lonW, lonE):
+    lon_name = da.dims[-1]
+    lon = da[lon_name].values
+    
+    ilonW = np.searchsorted(lon, lonW)
+    ilonE = np.searchsorted(lon, lonE)
+    
+    return da.isel({lon_name: range(ilonW, ilonE)})
+
+def latlon(da, latS, latN, lonW, lonE):
+    return latsel(lonsel(da, lonW, lonE), latS, latN)
+
 def get_land(da_source=None):
     '''Return land data for HiRAM'''
     
