@@ -173,18 +173,15 @@ def downsample(da, fac=2):
 
 from scipy.linalg import block_diag
 
-def coarse_grain(data4d, factor=1):
+def coarse_grain(data4d, factor=1, ndim=4):
     """Coarse grain the last two dimensions of the 4d (t, z, y, x) input data by a factor >= 1
     
     Args:
         factor (int)
     """
     
-    taxis = data4d[data4d.dims[0]]
-    zaxis = data4d[data4d.dims[1]]
     yaxis = data4d[data4d.dims[-2]]
-    xaxis = data4d[data4d.dims[-1]]
-    
+    xaxis = data4d[data4d.dims[-1]]    
     data = data4d.values
     
     # parameters needed for coarse-graining
@@ -204,8 +201,18 @@ def coarse_grain(data4d, factor=1):
     left = block_diag(*ones)
     
     # do the work
-    coarse = np.array([[np.dot( np.dot(left, data[it,iz,ysouth:ynorth,:]), right ) for iz in range(data.shape[1])] for it in range(data.shape[0])])
     xcoarse = np.dot(xaxis.values, right)
     ycoarse = np.dot(left, yaxis.values[ysouth:ynorth]).flatten()
     
-    return xr.DataArray(coarse, dims=data4d.dims, coords=[taxis,zaxis,ycoarse,xcoarse], name=data4d.name)
+    if ndim == 4:
+        taxis = data4d[data4d.dims[0]]
+        zaxis = data4d[data4d.dims[1]]
+        coarse = np.array([[np.dot( np.dot(left, data[it,iz,ysouth:ynorth,:]), right ) for iz in range(data.shape[1])] for it in range(data.shape[0])])
+        da = xr.DataArray(coarse, dims=data4d.dims, coords=[taxis,zaxis,ycoarse,xcoarse], name=data4d.name)
+    elif ndim == 2:
+        coarse = np.dot( np.dot(left, data[ysouth:ynorth,:]), right )
+        da = xr.DataArray(coarse, dims=data4d.dims, coords=[ycoarse,xcoarse], name=data4d.name)
+    else:
+        print("check ndim")
+        
+    return da
