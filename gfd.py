@@ -34,11 +34,11 @@ def nearest_mean(x_in, y_in, z_in, x_out, y_out, n_nearest=6, decay=4):
     return np.array(z_out)
 
 def fft(y, dt):
-    '''fft along the last axis
+    """fft along the last axis
     
     Returns:
         amplitude, phase, omega vector
-    '''
+    """
     
     from scipy import fftpack
     nt = y.shape[-1]
@@ -57,15 +57,26 @@ def fft(y, dt):
     return abs(Fy), np.angle(Fy), omegavec
 
 def fft_prod(u, v, dx):
-    '''fft of the product of u, v along the last axis
+    """fft of the product of u, v along the last axis
     
     Returns:
         (1/2)Re(u v*)
-    '''
+    """
     amp_u, ph_u, kvec = fft(u, dx)
     amp_v, ph_v, kvec = fft(v, dx)
 
     return 1/2*amp_u*amp_v*np.cos(ph_u - ph_v), kvec
+
+def area_weighted_mean(da, lat_name=None):
+    if lat_name == None:
+        lat = da[da.dims[-2]]
+        print('lat name:', lat.name)
+    else:
+        lat = da[lat_name]
+        
+    area_weights = np.cos(np.deg2rad(lat))
+    da_mean = np.nansum(da*area_weights)/np.nansum(xr.ones_like(da)*area_weights)
+    return da_mean
 
 def get_fcor(lat):
     return 2*2*np.pi/86164*np.sin(lat/180*np.pi)
@@ -74,11 +85,11 @@ def get_beta(lat):
     return 2*2*np.pi/86164/6371e3*np.cos(lat/180*np.pi)
     
 def geoaxes(axes, land=True):
-    '''Axes settings for geographical maps
+    """Axes settings for geographical maps
     
     Args:
         axes: array of axes or plt.gca()
-    '''
+    """
     
     if not (type(axes) == np.ndarray):
         axes = [axes]
@@ -100,7 +111,7 @@ def geoaxes(axes, land=True):
 from scipy.ndimage.filters import convolve1d
 
 def xroll(array, fac=1, axis=-1):
-    '''Compute cyclic rolling mean'''
+    """Compute cyclic rolling mean"""
     
     kernal = np.ones((fac))/fac
     rolled = convolve1d(array, kernal, axis=axis, mode='wrap')
@@ -117,23 +128,18 @@ def smooth(da, xfac=1, yfac=1):
 import xarray as xr
 
 def sym(da, dim='y'):
-    '''Symmetrize da across y = 0'''
+    """Symmetrize da across y = 0"""
 
     da_reverse = xr.DataArray(da.values, coords=[-da[dim]], dims=[dim])
     da_out = (da + da_reverse)/2
     return da_out
 
 def antisym(da, dim='y'):
-    '''Anti-symmetrize da across y = 0'''
+    """Anti-symmetrize da across y = 0"""
 
     da_reverse = xr.DataArray(-da.values, coords=[-da[dim]], dims=[dim])
     da_out = (da + da_reverse)/2
     return da_out
-
-def nan2zero(da):
-    nparray = da.values
-    nparray[np.isnan(nparray)] = 0
-    return xr.DataArray(nparray, coords=da.coords)
 
 def latsel(da, latS, latN):
     lat_name = da.dims[-2]
@@ -157,7 +163,7 @@ def latlon(da, latS, latN, lonW, lonE):
     return latsel(lonsel(da, lonW, lonE), latS, latN)
 
 def get_land(da_source=None):
-    '''Return land data for HiRAM'''
+    """For use in TC seed tracker with HiRAM land data"""
     
     if da_source is None:
         land_frac = xr.open_dataset('HiRAM_land_static.nc')['frac'][0]
@@ -166,19 +172,21 @@ def get_land(da_source=None):
         
     land_bool = land_frac.values/land_frac.values
     land_bool[np.isnan(land_bool)] = 0
-    return xr.DataArray(land_bool, coords=[land_frac.grid_yt, land_frac.grid_xt], dims=['lat', 'lon'])
+    return xr.DataArray(land_bool, coords=[land_frac[land_frac.dims[-2]], land_frac[land_frac.dims[-1]]], dims=['lat', 'lon'])
 
 def downsample(da, fac=2):
     return da[..., ::fac, ::fac]
 
 from scipy.linalg import block_diag
 
-def coarse_grain(data4d, factor=1, ndim=4):
-    """Coarse grain the last two dimensions of the 4d (t, z, y, x) input data by a factor >= 1
+def coarse_grain(data4d, factor=1):
+    """Coarse grain the last two dimensions of input data by a factor >= 1
     
     Args:
         factor (int)
     """
+    
+    ndim = len(data4d.dims)
     
     yaxis = data4d[data4d.dims[-2]]
     xaxis = data4d[data4d.dims[-1]]    
@@ -209,6 +217,10 @@ def coarse_grain(data4d, factor=1, ndim=4):
         zaxis = data4d[data4d.dims[1]]
         coarse = np.array([[np.dot( np.dot(left, data[it,iz,ysouth:ynorth,:]), right ) for iz in range(data.shape[1])] for it in range(data.shape[0])])
         da = xr.DataArray(coarse, dims=data4d.dims, coords=[taxis,zaxis,ycoarse,xcoarse], name=data4d.name)
+    elif ndim == 3:
+        taxis = data4d[data4d.dims[0]]
+        coarse = np.array([np.dot( np.dot(left, data[it,ysouth:ynorth,:]), right ) for it in range(data.shape[0])])
+        da = xr.DataArray(coarse, dims=data4d.dims, coords=[taxis,ycoarse,xcoarse], name=data4d.name)
     elif ndim == 2:
         coarse = np.dot( np.dot(left, data[ysouth:ynorth,:]), right )
         da = xr.DataArray(coarse, dims=data4d.dims, coords=[ycoarse,xcoarse], name=data4d.name)
@@ -216,3 +228,18 @@ def coarse_grain(data4d, factor=1, ndim=4):
         print("check ndim")
         
     return da
+
+def nan2zero(da):
+    nparray = da.values
+    nparray[np.isnan(nparray)] = 0
+    return xr.DataArray(nparray, coords=da.coords)
+
+from scipy.interpolate import interp2d
+
+def xrinterp(da, target):
+    """interpolation to target's grid"""
+    
+    da = nan2zero(da) # some data have nan on land, which breaks interp2d
+    npinterp = interp2d(da[da.dims[-1]], da[da.dims[-2]], da)(target[target.dims[-1]], target[target.dims[-2]])
+    da2 = xr.DataArray(npinterp, coords=[target[target.dims[-2]], target[target.dims[-1]]], dims=[target.dims[-2], target.dims[-1]], name=da.name)
+    return da2
