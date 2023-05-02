@@ -67,15 +67,15 @@ def fft_prod(u, v, dx):
 
     return 1/2*amp_u*amp_v*np.cos(ph_u - ph_v), kvec
 
-def area_weighted_mean(da, lat_name=None):
+def area_weighted_mean_2d(da, lat_name=None):
     if lat_name == None:
-        lat = da[da.dims[-2]]
-        print('lat name:', lat.name)
-    else:
-        lat = da[lat_name]
+        lat_name = da.dims[-2]
+
+    print('lat axis name:', lat_name)
         
-    area_weights = np.cos(np.deg2rad(lat))
-    da_mean = np.nansum(da*area_weights)/np.nansum(xr.ones_like(da)*area_weights)
+    area_weights = np.cos(np.deg2rad(da[lat_name]))
+    da_mean = np.nansum(da*area_weights)/np.nansum(np.isfinite(da)*area_weights)
+
     return da_mean
 
 def get_fcor(lat):
