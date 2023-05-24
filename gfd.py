@@ -111,13 +111,15 @@ def geoaxes(axes, land=True):
 from scipy.ndimage.filters import convolve1d
 
 def xroll(array, fac=1, axis=-1):
-    """Compute cyclic rolling mean"""
+    """Compute cyclic rolling mean. Equivalent to rolling(lon=fac, center=True).mean() except better handles end points"""
     
     kernal = np.ones((fac))/fac
     rolled = convolve1d(array, kernal, axis=axis, mode='wrap')
     return array - array + rolled # recover coords of the dataarray
 
 def yroll(array, fac=1, axis=-2):
+    """Equivalent to rolling(lat=fac, center=True).mean() except better handles end points"""
+
     kernal = np.ones((fac))/fac
     rolled = convolve1d(array, kernal, axis=axis, mode='nearest')
     return array - array + rolled # recover coords of the dataarray
